@@ -1,6 +1,6 @@
-with open("6-1.txt") as file:
-    line = file.readline().strip()
+from text.texts import get_lines
 
+for line in get_lines(6):
     start = 14
     potentiall_marker = line[0:start]
     index = start

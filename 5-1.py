@@ -1,3 +1,4 @@
+from text.texts import get_lines
 import re
 
 CratesColumn = list[str]
@@ -11,37 +12,36 @@ def get_file_contents() -> tuple[Crates, Moves]:
     moves: Moves = []
     is_after_number_row = False
 
-    with open("5-1.txt") as file:
-        for line in file.readlines():
-            index = 0
-            line = line.strip()
+    for line in get_lines(5):
+        index = 0
+        line = line.strip()
 
-            if line != "" and line[0] == "1":
-                is_after_number_row = True
-                continue
+        if line != "" and line[0] == "1":
+            is_after_number_row = True
+            continue
 
-            # get crates
-            if not is_after_number_row:
-                for sub in re.split("[ ]{3} ", line):
-                    sub = sub.strip()
+        # get crates
+        if not is_after_number_row:
+            for sub in re.split("[ ]{3} ", line):
+                sub = sub.strip()
 
-                    if sub == "":
+                if sub == "":
+                    index += 1
+                else:
+                    for element in sub.split(" "):
+                        if element != "":
+                            crates[index].append(element)
                         index += 1
-                    else:
-                        for element in sub.split(" "):
-                            if element != "":
-                                crates[index].append(element)
-                            index += 1
-                        index += 1
+                    index += 1
 
-            # get moves
-            index = 0
-            if is_after_number_row and line != "":
-                moves_line = []
-                for char in re.split("[move | from | to ]", line):
-                    if char != "":
-                        moves_line.append(int(char))
-                moves.append((moves_line[0], moves_line[1], moves_line[2]))
+        # get moves
+        index = 0
+        if is_after_number_row and line != "":
+            moves_line = []
+            for char in re.split("[move | from | to ]", line):
+                if char != "":
+                    moves_line.append(int(char))
+            moves.append((moves_line[0], moves_line[1], moves_line[2]))
 
     for crate_column in crates:
         crate_column.reverse()

@@ -35,9 +35,12 @@ def get_sizes():
 def main():
     sizes = get_sizes()
 
-    dirs_below_threshold = {directory: size for (
-        directory, size) in sizes.items() if size <= 100000}
-    print(sum(dirs_below_threshold.values()))
+    total_disk_space = 70000000
+    needed_disk_space = 30000000
+    space_to_free = sizes["/"] + needed_disk_space - total_disk_space
+    dirs_above_threshold = {directory: size for (
+        directory, size) in sizes.items() if size >= space_to_free}
+    print(min(dirs_above_threshold.values()))
 
 
 if __name__ == '__main__':

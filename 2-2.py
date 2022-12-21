@@ -1,3 +1,5 @@
+from text.texts import get_lines
+
 choices = {
     'A': 0,
     'B': 1,
@@ -17,10 +19,10 @@ offsets = {
 }
 
 score = 0
-with open("2-2.txt") as file:
-    for line in file.readlines():
-        opponent, outcome = line.strip().split(' ')
 
-        score += outcomes[outcome] + (choices[opponent] + offsets[outcome]) % 3 + 1
+for line in get_lines(2):
+    opponent, outcome = line.strip().split(' ')
+
+    score += outcomes[outcome] + (choices[opponent] + offsets[outcome]) % 3 + 1
 
 print(score)
