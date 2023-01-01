@@ -68,7 +68,7 @@ def carry_out_instructions(operations: Operations, cycles_to_sum: list[int]) -> 
 
 
 # part two
-def render_crt_image(operations: Operations) -> None:
+def recreate_crt_image(operations: Operations) -> None:
     crt = create_crt()
     sprite = create_sprite()
 
@@ -80,7 +80,7 @@ def render_crt_image(operations: Operations) -> None:
 
     while True:
         try:
-            crt_cycle = global_cycle            
+            crt_cycle = global_cycle
             global_cycle += 1
             operation, cycle, value = operations[operation_index]
 
@@ -91,24 +91,23 @@ def render_crt_image(operations: Operations) -> None:
 
                     if 0 <= x_registry < 40:
                         sprite[x_registry] = '#'
-                    
+
                     if 0 <= (x_registry + 1) < 40:
                         sprite[x_registry + 1] = '#'
 
                     if 0 <= (x_registry - 1) < 40:
                         sprite[x_registry - 1] = '#'
-                    
 
                 operation_index += 1
                 operation, cycle, value = operations[operation_index]
 
-            print(f'global_cycle: {global_cycle}')
-            print(f'x_registry: {x_registry}')
-            print('sprite:')
-            print_sprite(sprite)
-            print('crt:')
-            print_crt(crt)
-            print('-----------------\n')
+            # print(f'global_cycle: {global_cycle}')
+            # print(f'x_registry: {x_registry}')
+            # print('sprite:')
+            # print_sprite(sprite)
+            # print('crt:')
+            # print_crt(crt)
+            # print('-----------------\n')
 
             operations[operation_index] = (operation, cycle - 1, value)
 
@@ -117,7 +116,7 @@ def render_crt_image(operations: Operations) -> None:
         except IndexError:
             break
 
-    print_crt(crt)
+    return crt
 
 
 def print_crt(crt) -> None:
@@ -162,7 +161,9 @@ def main():
 
     # part two
     operations = get_operations(lines)
-    render_crt_image(operations)
+    crt = recreate_crt_image(operations)
+    print('crt:')
+    print_crt(crt)
 
 
 if __name__ == '__main__':
