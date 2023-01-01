@@ -1,3 +1,4 @@
+from copy import copy
 from enum import Enum
 from text.texts import get_lines
 
@@ -9,12 +10,20 @@ class Direction(Enum):
     LEFT = 'L'
 
 
-Operations = list[tuple[Direction, int]]
+Operation = tuple[Direction, int]
+Operations = list[Operation]
 Position = tuple[int, int]
 TailSpace = dict[str, bool]
-TailSegmentPositions = tuple[Position, Position]
+
+MOVEMENTS: dict[Direction, Position] = {
+    Direction.UP: (0, 1),
+    Direction.DOWN: (0, -1),
+    Direction.RIGHT: (1, 0),
+    Direction.LEFT: (-1, 0),
+}
 
 
+# part one
 def get_operations(lines: list[str]) -> Operations:
     operations: Operations = []
 
@@ -94,75 +103,152 @@ def carry_out_moves(tail_space: TailSpace, operations: Operations) -> TailSpace:
     return tail_space
 
 
-# TODO: something wrong, fix it :( 
-def carry_out_moves_long_tail(
-        tail_space: TailSpace,
-        operations: Operations,
-        tail_segments_positions: list[TailSegmentPositions]
-) -> TailSpace:
-    last_head_position = (None, None)
-    # x - width, y - height  x  y
-    current_head_position = (0, 0)
+# part two
+def carry_out_moves_two(rope: list[Position], operations: Operations) -> TailSpace:
+    tail_space: TailSpace = {}
 
-    for (direction, steps) in operations:
-        for _ in range(1, steps + 1):
-            match direction:
-                case Direction.UP:
-                    last_head_position = current_head_position
-                    current_head_position = (current_head_position[0],
-                                             current_head_position[1] + 1)
+    for operation in operations:
+        direction, steps = operation
 
-                case Direction.DOWN:
-                    last_head_position = current_head_position
-                    current_head_position = (current_head_position[0],
-                                             current_head_position[1] - 1)
+        for _ in range(steps):
+            # print_rope(rope)
+            head_x, head_y = rope[0]
+            movement_x, movement_y = MOVEMENTS[direction]
+            rope[0] = (head_x + movement_x, head_y + movement_y)
+            knots = rope[1:]
 
-                case Direction.RIGHT:
-                    last_head_position = current_head_position
-                    current_head_position = (current_head_position[0] + 1,
-                                             current_head_position[1])
+            for index in range(len(knots)):
+                head = rope[index]
+                if index != 0:
+                    head = knots[index - 1]
 
-                case Direction.LEFT:
-                    last_head_position = current_head_position
-                    current_head_position = (current_head_position[0] - 1,
-                                             current_head_position[1])
+                knot = knots[index]
+                knots[index] = move_tail_two(head=head,
+                                             tail=knot,
+                                             direction=direction)
 
-        for index, tail_segment_positions in enumerate(tail_segments_positions):
-            last_tail_segment_position = tail_segment_positions[1]
-            
-            if index == 0:
-                current_tail_segment_position = move_tail(
-                    current_head_position, last_head_position, last_tail_segment_position, tail_space)[1]
-            elif index == len(tail_segments_positions) - 1:
-                tail_space, current_tail_segment_position = move_tail(
-                    tail_segments_positions[index - 1][1], tail_segments_positions[index - 1][0], last_tail_segment_position, tail_space)
-            else:
-                current_tail_segment_position = move_tail(
-                    tail_segments_positions[index - 1][1], tail_segments_positions[index - 1][0], last_tail_segment_position, tail_space)[1]
+                if index == len(knots) - 1:
+                    tail_space[str(knot)] = True
 
-            tail_segments_positions[index] = (last_tail_segment_position, current_tail_segment_position)
+            rope = [rope[0]] + knots
 
+    # print_rope(rope)
     return tail_space
 
 
-def main():
-    # part one
-    lines = get_lines(9)
-    operations = get_operations(lines=lines)
+def print_rope(rope: list[Position]) -> None:
+    min_x = 0
+    max_x = 0
+    min_y = 0
+    max_y = 0
 
+    for position in rope:
+        x, y = position
+
+        min_x = min(min_x, x)
+        min_y = min(min_y, y)
+
+        max_x = max(max_x, x)
+        max_y = max(max_y, y)
+
+    positions_arr = [['.' for _ in range(min_x, max_x + 1)]
+                     for _ in range(min_y, max_y + 1)]
+
+    indexed_rope = list(map(
+        lambda pos, i: (pos, i),
+        rope,
+        list(i for i in range(10))))
+
+    for position, index in reversed(indexed_rope):
+        x, y = position
+        x = x - min_x
+        y = y - min_y
+
+        if index == 0:
+            positions_arr[y][x] = 'H'
+        else:
+            positions_arr[y][x] = f'{index}'
+
+    for _ in range(len(positions_arr[0]) + 2):
+        print('.', end='')
+    print()
+
+    for line in reversed(positions_arr):
+        print('.', end='')
+        for char in line:
+            print(char, end='')
+        print('.')
+
+    for _ in range(len(positions_arr[0]) + 2):
+        print('.', end='')
+    print()
+
+    print()
+
+
+# If the head is ever two steps directly up, down, left, or right from the tail,
+# the tail must also move one step in that direction so it remains close enough.
+# Otherwise, if the head and tail aren't touching and aren't in the
+# same row or column, the tail always moves one step diagonally to keep up.
+def move_tail_two(head: Position, tail: Position, direction: Direction) -> Position:
+    if head_and_tail_are_touching(head, tail):
+        return tail
+
+    head_x, head_y = head
+    tail_x, tail_y = tail
+
+    off_x, off_y = (head_x - tail_x, head_y - tail_y)
+
+    if head_is_two_steps_away(head, tail):
+        if off_x >= 2:
+            off_x = 1
+
+        if off_x <= -2:
+            off_x = -1
+
+        if off_y >= 2:
+            off_y = 1
+
+        if off_y <= -2:
+            off_y = -1
+
+    return (tail_x + off_x, tail_y + off_y)
+
+
+def head_and_tail_are_touching(head: Position, tail: Position) -> bool:
+    head_x, head_y = head
+    tail_x, tail_y = tail
+
+    return not (abs(head_x - tail_x) > 1 or abs(head_y - tail_y) > 1)
+
+
+def head_is_two_steps_away(head: Position, tail: Position) -> bool:
+    head_x, head_y = head
+    tail_x, tail_y = tail
+
+    if abs(head_x - tail_x) >= 2:
+        return True
+
+    if abs(head_y - tail_y) >= 2:
+        return True
+
+    return False
+
+
+def main():
+    lines = get_lines(9)
+    operations = get_operations(lines)
+
+    # part one
     tail_space: TailSpace = {str((0, 0)): True}
     tail_space = carry_out_moves(tail_space, operations)
 
     print(f'part one answer: {len(list(tail_space.keys()))}')
 
     # part two
-    tail_space: TailSpace = {str((0, 0)): True}
-    tail_segments_positions: list[TailSegmentPositions] = [
-        ((0, 0), (0, 0)) for _ in range(9)]
-    tail_space = carry_out_moves_long_tail(
-        tail_space, operations, tail_segments_positions)
-
-    print(f'part one answer: {len(list(tail_space.keys()))}')
+    rope = [(0, 0) for _ in range(10)]
+    tail_space = carry_out_moves_two(rope, operations)
+    print(f'part two answer: {len(list(tail_space.keys()))}')
 
 
 if __name__ == '__main__':
